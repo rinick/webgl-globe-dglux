@@ -1,6 +1,6 @@
 
 // test if a parameter value is dglux table
-function dgIsParamTable(value){
+function dgIsParamTable(val){
   return (val != null && typeof(val)=='object' && val.hasOwnProperty('cols') && val.hasOwnProperty('rows'));
 }
 

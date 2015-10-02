@@ -216,7 +216,11 @@ DAT.Globe = function(container, opts) {
     }
 
   };
-
+  function removePoints() {
+    if (this.points != null) {
+      scene.remove(this.points);
+    }
+  }
   function createPoints() {
     if (this._baseGeometry !== undefined) {
       if (this.is_animated === false) {
@@ -400,6 +404,7 @@ DAT.Globe = function(container, opts) {
 
   this.addData = addData;
   this.createPoints = createPoints;
+  this.removePoints = removePoints;
   this.renderer = renderer;
   this.render = render;
   this.scene = scene;
