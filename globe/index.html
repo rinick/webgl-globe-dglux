@@ -10,24 +10,12 @@
       body {
         margin: 0;
         padding: 0;
-        background: #000000 url(/globe/loading.gif) center center no-repeat;
+        background: #000000 url(loading.gif) center center no-repeat;
         color: #ffffff;
         font-family: sans-serif;
         font-size: 13px;
         line-height: 20px;
         height: 100%;
-      }
-
-      #info {
-
-        font-size: 11px;
-        position: absolute;
-        bottom: 5px;
-        background-color: rgba(0,0,0,0.8);
-        border-radius: 3px;
-        right: 10px;
-        padding: 10px;
-
       }
 
       #currentInfo {
@@ -42,29 +30,7 @@
         padding: 10px;
       }
 
-      a {
-        color: #aaa;
-        text-decoration: none;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
 
-      .bull {
-        padding: 0 5px;
-        color: #555;
-      }
-
-      #title {
-        position: absolute;
-        top: 20px;
-        width: 270px;
-        left: 20px;
-        background-color: rgba(0,0,0,0.2);
-        border-radius: 3px;
-        font: 20px Georgia;
-        padding: 10px;
-      }
 
       .year {
         font: 16px Georgia;
@@ -84,108 +50,97 @@
         color: #fff;
       }
 
-      #ce span {
-        display: none;
-      }
-
-      #ce {
-        width: 107px;
-        height: 55px;
-        display: block;
-        position: absolute;
-        bottom: 15px;
-        left: 20px;
-        background: url(/globe/ce.png);
-      }
-
-
     </style>
   </head>
   <body>
 
   <div id="container"></div>
 
-  <div id="info">
-    <strong><a href="http://www.chromeexperiments.com/globe">WebGL Globe</a></strong> <span class="bull">&bull;</span> Created by the Google Data Arts Team <span class="bull">&bull;</span> Data acquired from <a href="http://sedac.ciesin.columbia.edu/gpw/">SEDAC</a>
-  </div>
-
-  <div id="currentInfo">
-    <span id="year1990" class="year">1990</span>
-    <span id="year1995" class="year">1995</span>
-    <span id="year2000" class="year">2000</span>
-  </div>
-
-  <div id="title">
-    World Population
-  </div>
-
-  <a id="ce" href="http://www.chromeexperiments.com/globe">
-    <span>This is a Chrome Experiment</span>
-  </a>
-
-  <script type="text/javascript" src="/globe/third-party/Detector.js"></script>
-  <script type="text/javascript" src="/globe/third-party/three.min.js"></script>
-  <script type="text/javascript" src="/globe/third-party/Tween.js"></script>
-  <script type="text/javascript" src="/globe/globe.js"></script>
+  <script type="text/javascript" src="third-party/Detector.js"></script>
+  <script type="text/javascript" src="third-party/three.min.js"></script>
+  <script type="text/javascript" src="third-party/Tween.js"></script>
+  <script type="text/javascript" src="globe.js"></script>
   <script type="text/javascript">
 
     if(!Detector.webgl){
       Detector.addGetWebGLMessage();
     } else {
 
-      var years = ['1990','1995','2000'];
       var container = document.getElementById('container');
       var globe = new DAT.Globe(container);
 
       console.log(globe);
-      var i, tweens = [];
-      
-      var settime = function(globe, t) {
-        return function() {
-          new TWEEN.Tween(globe).to({time: t/years.length},500).easing(TWEEN.Easing.Cubic.EaseOut).start();
-          var y = document.getElementById('year'+years[t]);
-          if (y.getAttribute('class') === 'year active') {
-            return;
-          }
-          var yy = document.getElementsByClassName('year');
-          for(i=0; i<yy.length; i++) {
-            yy[i].setAttribute('class','year');
-          }
-          y.setAttribute('class', 'year active');
-        };
-      };
-      
-      for(var i = 0; i<years.length; i++) {
-        var y = document.getElementById('year'+years[i]);
-        y.addEventListener('mouseover', settime(globe,i), false);
-      }
-      
-      var xhr;
-      TWEEN.start();
-      
-      
-      xhr = new XMLHttpRequest();
-      xhr.open('GET', '/globe/population909500.json', true);
-      xhr.onreadystatechange = function(e) {
-        if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
-            var data = JSON.parse(xhr.responseText);
-            window.data = data;
-            for (i=0;i<data.length;i++) {
-              globe.addData(data[i][1], {format: 'magnitude', name: data[i][0], animated: true});
-            }
-            globe.createPoints();
-            settime(globe,0)();
-            globe.animate();
-            document.body.style.backgroundImage = 'none'; // remove loading
-          }
-        }
-      };
-      xhr.send(null);
     }
 
   </script>
+  <script>
 
+function rendererData(){
+    var data = [];
+    for (var j = 0; j < tabledata.rows.length; j++) {
+        var row = tabledata.rows[j];
+        data.push(row[latitudeColumnIndex]);
+        data.push(row[longitudeColumnIndex]);
+        data.push(row[valueColumnIndex]);
+    }
+
+    globe.addData(data, {format: 'magnitude', name: '', animated: false});
+    globe.createPoints();
+    //globe.time = 0;
+    globe.animate();
+}
+
+var latitudeColumn,longitudeColumn,valueColumn,tabledata,latitudeColumnIndex,longitudeColumnIndex,valueColumnIndex;
+
+var paramChanged = false;
+var dgParams = {
+  'tabledata':function(val){
+    if (val != null && typeof(val)=='object' && val.hasOwnProperty('cols') && val.hasOwnProperty('rows')){
+      tabledata = val;
+      paramChanged = true;
+    }
+  },
+  'latitudeColumn':function(val){
+    latitudeColumn = val;
+    paramChanged = true;
+  },
+  'longitudeColumn':function(val){
+    longitudeColumn = val;
+    paramChanged = true;
+  },
+  'valueColumn':function(val){
+    valueColumn = val;
+    paramChanged = true;
+  },
+}
+
+function dgParamsUpdated(){
+  if (paramChanged){
+    latitudeColumnIndex = -1;
+    longitudeColumnIndex = -1;
+    valueColumnIndex = -1;
+    if (latitudeColumn != null && longitudeColumn != null && valueColumn != null && tabledata != null)
+    for (var i=0;i< tabledata.cols.length;++i){
+      if (tabledata.cols[i].name == latitudeColumn){
+        latitudeColumnIndex = i;
+      }
+      if (tabledata.cols[i].name == longitudeColumn){
+        longitudeColumnIndex = i;
+      }
+      if (tabledata.cols[i].name == valueColumn){
+        valueColumnIndex = i;
+      }
+      
+    }
+    if (latitudeColumnIndex >= 0 && longitudeColumnIndex >= 0 && valueColumnIndex >= 0){
+        rendererData();
+    }
+    paramChanged = false;
+  }
+}
+</script>
+<script type='text/javascript' src='dgframe.js'></script>
   </body>
 
 </html>
+
