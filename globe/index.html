@@ -51,48 +51,80 @@
 function rendererData(){
     globe.removePoints();
     var data = [];
-    for (var j = 0; j < tabledata.rows.length; j++) {
+    if (colorColumnIndex < 0) {
+      for (var j = 0; j < tabledata.rows.length; j++) {
         var row = tabledata.rows[j];
         data.push(row[latitudeColumnIndex]);
         data.push(row[longitudeColumnIndex]);
         data.push(row[valueColumnIndex]);
+      }
+
+      globe.addData(data, {format: 'magnitude', name: '', animated: false});
+    } else {
+      for (var j = 0; j < tabledata.rows.length; j++) {
+        var row = tabledata.rows[j];
+        data.push(row[latitudeColumnIndex]);
+        data.push(row[longitudeColumnIndex]);
+        data.push(row[valueColumnIndex]);
+        data.push(row[colorColumnIndex]);
+      }
+
+      globe.addData(data, {format: 'dglux', name: '', animated: false});
     }
 
-    globe.addData(data, {format: 'magnitude', name: '', animated: false});
     globe.createPoints();
     //globe.time = 0;
 
 }
 
-var latitudeColumn,longitudeColumn,valueColumn,tabledata,latitudeColumnIndex,longitudeColumnIndex,valueColumnIndex;
+var latitudeColumn,longitudeColumn,valueColumn,colorColumn,tabledata,latitudeColumnIndex,longitudeColumnIndex,valueColumnIndex,colorColumnIndex;
+var latitude = NaN,longitude=NaN,distance=NaN;
 
-var paramChanged = false;
+var dataChanged = false;
+var positionChanged = false;
 var dgParams = {
   'tabledata':function(val){
     if (dgIsParamTable(val)){
       tabledata = val;
-      paramChanged = true;
+      dataChanged = true;
     }
   },
   'latitudeColumn':function(val){
     latitudeColumn = val;
-    paramChanged = true;
+    dataChanged = true;
   },
   'longitudeColumn':function(val){
     longitudeColumn = val;
-    paramChanged = true;
+    dataChanged = true;
   },
   'valueColumn':function(val){
     valueColumn = val;
-    paramChanged = true;
+    dataChanged = true;
   },
+  'colorColumn':function(val){
+    colorColumn = val;
+    dataChanged = true;
+  },
+  'latitude':function(val){
+    latitude = val;
+    positionChanged = true;
+  },
+  'longitude':function(val){
+    longitude = val;
+    positionChanged = true;
+  },
+  'distance':function(val){
+    distance = val;
+    positionChanged = true;
+  }
 }
 
 function dgParamsUpdated(){
-  if (paramChanged){
+  if (dataChanged){
     latitudeColumnIndex = -1;
     longitudeColumnIndex = -1;
     valueColumnIndex = -1;
+    colorColumnIndex = -1;
     if (latitudeColumn != null && longitudeColumn != null && valueColumn != null && tabledata != null)
     for (var i=0;i< tabledata.cols.length;++i){
       if (tabledata.cols[i].name == latitudeColumn){
@@ -104,12 +136,18 @@ function dgParamsUpdated(){
       if (tabledata.cols[i].name == valueColumn){
         valueColumnIndex = i;
       }
-      
+      if (tabledata.cols[i].name == colorColumn){
+        colorColumnIndex = i;
+      }
     }
     if (latitudeColumnIndex >= 0 && longitudeColumnIndex >= 0 && valueColumnIndex >= 0){
         rendererData();
     }
-    paramChanged = false;
+    dataChanged = false;
+  }
+  if (positionChanged) {
+    globe.navigateTo(latitude, longitude, distance);
+    positionChanged = false;
   }
 }
 </script>

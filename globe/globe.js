@@ -177,6 +177,9 @@ DAT.Globe = function(container, opts) {
     } else if (opts.format === 'legend') {
       step = 4;
       colorFnWrapper = function(data, i) { return colorFn(data[i+3]); }
+    } else if (opts.format === 'dglux') {
+      step = 4;
+      colorFnWrapper = function(data, i) { return new THREE.Color(data[i+3]); }
     } else {
       throw('error: format not supported: '+opts.format);
     }
@@ -370,6 +373,17 @@ DAT.Globe = function(container, opts) {
     renderer.render(scene, camera);
   }
 
+  function navigateTo(lat, lng, dis) {
+    if (dis == dis) {
+      distanceTarget = dis
+    }
+    if (lat == lat && lng == lng) {
+      target.x = (90 + lng) * Math.PI / 180;
+      target.y = (180 - lat) * Math.PI / 180;
+    }
+
+    renderer.render(scene, camera);
+  }
   init();
   this.animate = animate;
 
@@ -408,6 +422,7 @@ DAT.Globe = function(container, opts) {
   this.renderer = renderer;
   this.render = render;
   this.scene = scene;
+  this.navigateTo = navigateTo;
 
   return this;
 
