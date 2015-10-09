@@ -364,9 +364,28 @@ DAT.Globe = function(container, opts) {
 
   function render() {
     zoom(curZoomSpeed);
-
-    rotation.x += (target.x - rotation.x) * 0.1;
-    rotation.y += (target.y - rotation.y) * 0.1;
+    var dx = (target.x - rotation.x);
+    var dx1 = (target.x - rotation.x + Math.PI*2);
+    var dx2 = (target.x - rotation.x - Math.PI*2);
+    if (dx*dx > dx1*dx1) {
+      dx = dx1;
+    }
+    if (dx*dx > dx2*dx2) {
+      dx = dx2;
+    }
+    var dy = (target.y - rotation.y);
+    var dy1 = (target.y - rotation.y + Math.PI*2);
+    var dy2 = (target.y - rotation.y - Math.PI*2);
+    if (dy*dy > dy1*dy1) {
+      dy = dy1;
+    }
+    if (dy*dy > dy2*dy2) {
+      dy = dy2;
+    }
+    rotation.x += dx * 0.1;
+    rotation.y += dy * 0.1;
+    rotation.x %= Math.PI*2;
+    rotation.y %= Math.PI*2;
     distance += (distanceTarget - distance) * 0.3;
 
     camera.position.x = distance * Math.sin(rotation.x) * Math.cos(rotation.y);
@@ -383,8 +402,8 @@ DAT.Globe = function(container, opts) {
       distanceTarget = dis
     }
     if (lat == lat && lng == lng) {
-      target.x = (90 + lng) * Math.PI / 180;
-      target.y = (180 - lat) * Math.PI / 180;
+      target.x = (90 + lng)%360 * Math.PI / 180;
+      target.y = (180 - lat)%360 * Math.PI / 180;
     }
 
     renderer.render(scene, camera);
