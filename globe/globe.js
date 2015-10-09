@@ -84,6 +84,7 @@ DAT.Globe = function(container, opts) {
   var distance = 100000, distanceTarget = 100000;
   var padding = 40;
   var PI_HALF = Math.PI / 2;
+  var PI_2 = Math.PI * 2;
 
   function init() {
 
@@ -119,6 +120,8 @@ DAT.Globe = function(container, opts) {
     scene.add(mesh);
 
     shader = Shaders['atmosphere'];
+    shader.fragmentShader = shader.fragmentShader.replace(' 1.0, 1.0, 1.0, 1.0 ', ' 0.6, 0.8, 1.0, 1.0 ')
+    console.log(shader);
     uniforms = THREE.UniformsUtils.clone(shader.uniforms);
 
     material = new THREE.ShaderMaterial({
@@ -282,6 +285,7 @@ DAT.Globe = function(container, opts) {
     subgeo.merge(point.geometry, point.matrix);
   }
 
+  var _moving = false;
   function onMouseDown(event) {
     event.preventDefault();
 
@@ -296,6 +300,7 @@ DAT.Globe = function(container, opts) {
     targetOnDown.y = target.y;
 
     container.style.cursor = 'move';
+    _moving = true;
   }
 
   function onMouseMove(event) {
@@ -305,10 +310,15 @@ DAT.Globe = function(container, opts) {
     var zoomDamp = distance/1000;
 
     target.x = targetOnDown.x + (mouse.x - mouseOnDown.x) * 0.005 * zoomDamp;
-    target.y = targetOnDown.y + (mouse.y - mouseOnDown.y) * 0.005 * zoomDamp;
+    if ( target.y > PI_HALF ||  target.y < - PI_HALF) {
+      target.y = targetOnDown.y - (mouse.y - mouseOnDown.y) * 0.005 * zoomDamp;
+    } else {
+      target.y = targetOnDown.y + (mouse.y - mouseOnDown.y) * 0.005 * zoomDamp;
+    }
+    
 
-    target.y = target.y > PI_HALF ? PI_HALF : target.y;
-    target.y = target.y < - PI_HALF ? - PI_HALF : target.y;
+    //target.y = target.y > PI_HALF ? PI_HALF : target.y;
+    //target.y = target.y < - PI_HALF ? - PI_HALF : target.y;
   }
 
   function onMouseUp(event) {
@@ -316,12 +326,14 @@ DAT.Globe = function(container, opts) {
     container.removeEventListener('mouseup', onMouseUp, false);
     container.removeEventListener('mouseout', onMouseOut, false);
     container.style.cursor = 'auto';
+    _moving = false;
   }
 
   function onMouseOut(event) {
     container.removeEventListener('mousemove', onMouseMove, false);
     container.removeEventListener('mouseup', onMouseUp, false);
     container.removeEventListener('mouseout', onMouseOut, false);
+    _moving = false;
   }
 
   function onMouseWheel(event) {
@@ -364,28 +376,10 @@ DAT.Globe = function(container, opts) {
 
   function render() {
     zoom(curZoomSpeed);
-    var dx = (target.x - rotation.x);
-    var dx1 = (target.x - rotation.x + Math.PI*2);
-    var dx2 = (target.x - rotation.x - Math.PI*2);
-    if (dx*dx > dx1*dx1) {
-      dx = dx1;
-    }
-    if (dx*dx > dx2*dx2) {
-      dx = dx2;
-    }
-    var dy = (target.y - rotation.y);
-    var dy1 = (target.y - rotation.y + Math.PI*2);
-    var dy2 = (target.y - rotation.y - Math.PI*2);
-    if (dy*dy > dy1*dy1) {
-      dy = dy1;
-    }
-    if (dy*dy > dy2*dy2) {
-      dy = dy2;
-    }
-    rotation.x += dx * 0.1;
-    rotation.y += dy * 0.1;
-    rotation.x %= Math.PI*2;
-    rotation.y %= Math.PI*2;
+
+    rotation.x += (target.x - rotation.x) * 0.1;
+    rotation.y += (target.y - rotation.y) * 0.1;
+
     distance += (distanceTarget - distance) * 0.3;
 
     camera.position.x = distance * Math.sin(rotation.x) * Math.cos(rotation.y);
@@ -396,15 +390,31 @@ DAT.Globe = function(container, opts) {
 
     renderer.render(scene, camera);
   }
-
+  var _lastDistance;
   function navigateTo(lat, lng, dis) {
-    if (dis == dis) {
-      distanceTarget = dis
+    if (_moving) {
+      return;
+    }
+    if (dis == dis && _lastDistance != dis) {
+      distanceTarget = dis;
+      _lastDistance = dis;
     }
     if (lat == lat && lng == lng) {
-      target.x = (90 + lng)%360 * Math.PI / 180;
-      target.y = (180 - lat)%360 * Math.PI / 180;
+      var tx = (90 + lng)%360 * Math.PI / 180;
+      var ty = (180 - lat)%360 * Math.PI / 180;
+
+      var tx0 = target.x % (PI_2);
+      var ty0 = target.y % (PI_2);
+      dx = tx - tx0;
+      dy = ty - ty0;
+      if (dx > Math.PI) dx -= PI_2;
+      if (dx < -Math.PI) dx += PI_2;
+      if (dy > Math.PI) dy -= PI_2;
+      if (dy < -Math.PI) dy += PI_2;
+      target.x += dx;
+      target.y += dy;
     }
+
 
     renderer.render(scene, camera);
   }
